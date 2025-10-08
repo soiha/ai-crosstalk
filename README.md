@@ -108,6 +108,25 @@ Create `config.json` to customize names:
 
 ## Tools
 
+### 🚀 Safari Extension (Beta)
+
+**NEW:** Streamline your workflow with keyboard shortcuts!
+
+The Safari extension eliminates manual copy-pasting:
+
+- `Cmd+Shift+E` - Paste envelope and submit to ChatGPT
+- `Cmd+Shift+C` - Copy response envelope
+
+**Workflow:**
+1. Generate envelope in Claude → auto-copied
+2. Switch to ChatGPT → press `Cmd+Shift+E`
+3. Wait for response → auto-selected
+4. Press `Cmd+C` → switch back to Claude
+
+**Saves 3-4 manual steps per exchange!**
+
+See [extensions/safari/](extensions/safari/) for installation instructions.
+
 ### Command Line Script
 
 The `envelope.js` script handles all envelope operations:

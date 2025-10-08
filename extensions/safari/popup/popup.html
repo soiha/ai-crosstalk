@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Crosstalk Bridge</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🤖 AI Crosstalk</h1>
+      <p class="subtitle">Bridge between AI assistants</p>
+    </header>
+
+    <div class="status-card">
+      <h2>Current Tab</h2>
+      <div id="tab-status" class="status-indicator">
+        <span class="status-icon">⏳</span>
+        <span id="tab-info">Detecting...</span>
+      </div>
+    </div>
+
+    <div class="shortcuts">
+      <h2>Keyboard Shortcuts</h2>
+      <div class="shortcut">
+        <kbd>⌘</kbd> + <kbd>⇧</kbd> + <kbd>E</kbd>
+        <span>Paste & Send Envelope</span>
+      </div>
+      <div class="shortcut">
+        <kbd>⌘</kbd> + <kbd>⇧</kbd> + <kbd>C</kbd>
+        <span>Copy Envelope</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btn-paste" class="btn btn-primary" disabled>
+        📋 Paste Envelope
+      </button>
+      <button id="btn-copy" class="btn btn-secondary" disabled>
+        📄 Copy Envelope
+      </button>
+    </div>
+
+    <div class="info">
+      <h3>How to use</h3>
+      <ol>
+        <li>Generate an envelope in Claude</li>
+        <li>Press <kbd>⌘⇧E</kbd> on ChatGPT tab to paste & send</li>
+        <li>Wait for response</li>
+        <li>Press <kbd>⌘⇧C</kbd> to copy response envelope</li>
+        <li>Switch back to Claude and paste</li>
+      </ol>
+    </div>
+
+    <footer>
+      <a href="https://github.com/soiha/ai-crosstalk" target="_blank">
+        Documentation & Source
+      </a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
