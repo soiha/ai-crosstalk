@@ -14,30 +14,58 @@ AI Crosstalk is a simple, extensible protocol that lets two AI assistants (Claud
 
 ## Quick Start
 
-1. **Clone and install**
-   ```bash
-   git clone https://github.com/yourusername/ai-crosstalk.git
-   cd ai-crosstalk
-   npm install
-   ```
+### 1. Clone and Install
 
-2. **Configure your setup**
-   ```bash
-   cp config.example.json config.json
-   # Edit config.json with your names
-   ```
+```bash
+git clone https://github.com/yourusername/ai-crosstalk.git
+cd ai-crosstalk
+npm install
+```
 
-3. **Send a message**
-   ```bash
-   ./envelope.js send --context "api-design" --intent QUESTION --body "How should we handle auth?"
-   ```
+### 2. Configure Your Setup
 
-4. **Copy the envelope, paste it to the other AI**
+```bash
+cp config.example.json config.json
+# Edit config.json with your AI names and username
+```
 
-5. **Get the response, parse it**
-   ```bash
-   pbpaste | ./envelope.js parse
-   ```
+### 3. Give Both AIs Instructions
+
+**This is critical!** Both AIs need to understand the envelope protocol.
+
+**Option A: Use the AI-INSTRUCTIONS.md file**
+
+Copy the entire contents of [`AI-INSTRUCTIONS.md`](AI-INSTRUCTIONS.md) into a message to each AI at the start of your session. This file contains everything they need to know.
+
+**Option B: For Claude specifically**
+
+If you're using Claude, you can share [`CLAUDE.md`](CLAUDE.md) instead. When using Claude Code, this happens automatically via the codebase context.
+
+**Option C: Custom system prompt**
+
+If your AI supports system prompts (like ChatGPT with custom instructions), you can use a shortened version:
+
+```
+You participate in structured AI communication via envelopes.
+When receiving [[SENDER→YOU v1]] envelopes, respond with [[YOU→SENDER v1]] envelopes.
+Copy the session ID exactly. Output ONLY the envelope, no commentary.
+See the AI Crosstalk protocol for details.
+```
+
+💡 **Tip:** Test by sending a simple NOTE to verify both AIs understand the format before starting real collaboration.
+
+### 4. Start Communicating
+
+```bash
+# Generate an envelope
+./envelope.js send --context "api-design" --intent QUESTION --body "How should we handle auth?"
+
+# Copy and paste the envelope to the other AI
+# The AI will respond with an envelope
+
+# Parse the response
+pbpaste | ./envelope.js parse
+```
 
 That's it! 🎉
 
@@ -181,15 +209,20 @@ Choose the intent that best describes your message:
 
 ```
 ai-crosstalk/
-├── envelope.js           # CLI tool for sending/parsing
-├── config.json          # Your local config (gitignored)
-├── config.default.json  # Default fallback config
-├── config.example.json  # Example configuration
-├── PROTOCOL.md          # Full protocol specification
-├── CLAUDE.md           # Quick-start guide for Claude
-├── .claude/            # Claude Code integration
-│   └── commands/       # Slash commands
-└── examples/           # Example conversations
+├── envelope.js            # CLI tool for sending/parsing
+├── config.json           # Your local config (gitignored)
+├── config.default.json   # Default fallback config
+├── config.example.json   # Example configuration
+├── PROTOCOL.md           # Full protocol specification
+├── AI-INSTRUCTIONS.md    # Generic instructions for any AI
+├── CLAUDE.md            # Claude-specific quick-start
+├── .claude/             # Claude Code integration
+│   └── commands/        # Slash commands (/brother, /parse-brother)
+└── examples/            # Example conversations
+    ├── 01-websocket-reconnect.md
+    ├── 02-code-review.md
+    ├── 03-debugging-collaboration.md
+    └── README.md
 ```
 
 ## Contributing
