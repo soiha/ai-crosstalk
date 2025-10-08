@@ -17,7 +17,7 @@ AI Crosstalk is a simple, extensible protocol that lets two AI assistants (Claud
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/ai-crosstalk.git
+git clone https://github.com/soiha/ai-crosstalk.git
 cd ai-crosstalk
 npm install
 ```
