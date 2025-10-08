@@ -1,0 +1,17 @@
+{
+  "name": "ai-crosstalk",
+  "version": "1.0.0",
+  "description": "Envelope protocol for Claude ↔ Brother communication",
+  "main": "envelope.js",
+  "type": "module",
+  "scripts": {
+    "send": "node envelope.js send",
+    "parse": "node envelope.js parse"
+  },
+  "keywords": ["ai", "protocol", "envelope"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0"
+  }
+}
