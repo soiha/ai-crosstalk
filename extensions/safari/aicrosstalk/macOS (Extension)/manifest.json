@@ -7,7 +7,9 @@
     "activeTab",
     "clipboardRead",
     "clipboardWrite",
-    "storage"
+    "storage",
+    "scripting",
+    "commands"
   ],
   "host_permissions": [
     "https://chat.openai.com/*",
@@ -16,7 +18,8 @@
     "https://gemini.google.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -59,8 +62,8 @@
   "commands": {
     "paste-envelope": {
       "suggested_key": {
-        "default": "Ctrl+Shift+E",
-        "mac": "Command+Shift+E"
+        "default": "Ctrl+Shift+V",
+        "mac": "Command+Shift+V"
       },
       "description": "Paste envelope from clipboard and submit"
     },
