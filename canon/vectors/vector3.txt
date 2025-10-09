@@ -1,0 +1,15 @@
+Vector 3 — CRLF + Tabs
+Payload:
+[[BROTHER→CLAUDE v1]]
+user: kalle
+session: 2025-10-09T17Z deadbeef
+context: line-endings
+intent: REQUEST
+body: |
+	Tabbed line 1
+	Tabbed line 2
+
+SHA-256: 8b1e4c0837b1ffbf6cf7c60c9b3a2197cda866bbaec135797160eac32c19a55c
+
+Detached JWS:
+eyJhbGciOiJFZERTQSIsImI2NCI6dHJ1ZSwiY3JpdCI6WyJiNjQiLCJjdHkiLCJ2ZXIiXSwiY3R5IjoiY3Jvc3N0YWxrL3YxLjEiLCJ0eXAiOiJKT1NFIiwidmVyIjoiMS4xLXJjMSJ9..jBjTe2YBudKACA-x7jWVGRhrVei3gh98KWtj9gCvFGiW9ZrOO5Iz8-aW-VVYHcE7fPdIWLCzx8jcwT1Xro7_Dw

@@ -1,0 +1,14 @@
+Vector 2 — Unicode NFC
+Payload:
+[[BROTHER→CLAUDE v1]]
+user: källä
+session: 2025-10-09T17Z cafe01
+context: unicode-normalization
+intent: REQUEST
+body: |
+  Café naïve — snowman: ☃️
+
+SHA-256: 57fec2319a80882d2743acb521104a63f4e85c2c1eac35496beb6e8bb4b2255c
+
+Detached JWS:
+eyJhbGciOiJFZERTQSIsImI2NCI6dHJ1ZSwiY3JpdCI6WyJiNjQiLCJjdHkiLCJ2ZXIiXSwiY3R5IjoiY3Jvc3N0YWxrL3YxLjEiLCJ0eXAiOiJKT1NFIiwidmVyIjoiMS4xLXJjMSJ9..6LE1Q3PjLhwzaq4qyqPVZPm4zr7ujVZeBkpkOh4CMKP6Uls7aN11RmksNahDL7NKCGRgzqTX9Pg8mzov66KpBA

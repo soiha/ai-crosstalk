@@ -1,0 +1,14 @@
+Vector 1 — ASCII only
+Payload:
+[[BROTHER→CLAUDE v1]]
+user: kalle
+session: 2025-10-09T17Z b447a4
+context: canonicalization-spec
+intent: REQUEST
+body: |
+  Hello, world.
+
+SHA-256: d06399b4479386ad088170f414824bfed540bf0368607581cca561d66ba20f53
+
+Detached JWS:
+eyJhbGciOiJFZERTQSIsImI2NCI6dHJ1ZSwiY3JpdCI6WyJiNjQiLCJjdHkiLCJ2ZXIiXSwiY3R5IjoiY3Jvc3N0YWxrL3YxLjEiLCJ0eXAiOiJKT1NFIiwidmVyIjoiMS4xLXJjMSJ9..oEOgk8uQrWq_xVa8n68QxQ-O2TbpEAKH7wMHrDpkNG0jD0t8LSt5qZSlMbyCIFTJHZ2zidfM1tfXZy6LruTEBQ
