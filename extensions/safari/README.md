@@ -4,7 +4,7 @@ A Safari extension that streamlines AI Crosstalk envelope exchange between Claud
 
 ## Features
 
-- **⌨️ Keyboard Shortcuts** - Cmd+Shift+E to paste & send, Cmd+Shift+C to copy
+- **⌨️ Keyboard Shortcuts** - Cmd+Shift+E to paste & send, Cmd+Shift+R to copy
 - **🎯 Auto-detection** - Automatically detects ChatGPT and Claude.ai tabs
 - **📋 Clipboard Integration** - Seamless clipboard reading and writing
 - **🔔 Smart Notifications** - Visual feedback for all actions
@@ -85,7 +85,7 @@ The extension implements **Option B** (semi-automatic with hotkeys):
 | Shortcut | Action | When to Use |
 |----------|--------|-------------|
 | `Cmd+Shift+E` | Paste & Send Envelope | On ChatGPT tab with envelope in clipboard |
-| `Cmd+Shift+C` | Copy Envelope | On Claude tab after receiving response |
+| `Cmd+Shift+R` | Copy Envelope | On ChatGPT tab after response received |
 
 ### Step-by-Step
 
@@ -193,12 +193,83 @@ Improvements welcome!
 - Batch envelope exchange
 - Custom keyboard shortcuts
 
+## Safari Quirks & Workarounds
+
+Building Safari extensions involves several platform-specific challenges. Here's what we encountered and how we solved them:
+
+### 1. Clipboard Access Restrictions
+
+**Problem:** Safari blocks `navigator.clipboard` API in many contexts for security.
+
+**Solution:** Fall back to `prompt()` dialogs:
+- For pasting: Shows a dialog where user can paste with Cmd+V
+- For copying: Shows a dialog with the text pre-selected for Cmd+C
+
+### 2. Extension Registration Issues
+
+**Problem:** After disabling the extension or cleaning build, it disappears from Safari Settings.
+
+**Solution:**
+- Run the wrapper app at least once: `open aicrosstalk.app`
+- Keep the app running when first enabling the extension
+- Enable "Allow unsigned extensions" in Safari → Settings → Advanced → "Show features for web developers"
+- Manual registration: `pluginkit -a path/to/aicrosstalk.app/Contents/PlugIns/aicrosstalk\ Extension.appex`
+
+### 3. Aggressive JavaScript Caching
+
+**Problem:** Safari caches content script JavaScript even after rebuilding.
+
+**Solution:**
+- Clean build folder: Product → Clean Build Folder (Cmd+Shift+K)
+- Completely quit Safari (Cmd+Q) and reopen
+- Hard reload pages with Web Inspector's "Disable Caches" enabled
+
+### 4. Envelope Format Detection
+
+**Problem:** ChatGPT's markdown renderer collapses newlines when displaying plain text (not code blocks).
+
+**Solution:** Updated regex patterns to work with both newline and space-separated formats:
+```javascript
+// Works with both formats
+body: /body:\s*\|\s*([^]+?)(?=\s+sig:)/
+session: /session:\s*([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:context|intent|body|...))/
+```
+
+### 5. File Path Requirements
+
+**Problem:** Xcode doesn't bundle files with folder structure from manifest.json.
+
+**Solution:** Flatten all paths in manifest.json - no subdirectories:
+```json
+// ✅ Works
+"js": ["envelope-parser.js", "content-chatgpt.js"]
+
+// ❌ Doesn't work
+"js": ["scripts/envelope-parser.js", "scripts/content-chatgpt.js"]
+```
+
+### 6. Message Passing Limitations
+
+**Problem:** `browser.tabs.sendMessage()` returns undefined in Safari.
+
+**Solution:** Use `browser.scripting.executeScript()` to inject code directly into the page context where it can access the content script's bridge object.
+
+### 7. Keyboard Shortcut Conflicts
+
+**Problem:** ChatGPT intercepts Cmd+Shift+V and Cmd+Shift+C.
+
+**Solution:** Use alternative shortcuts:
+- Cmd+Shift+**E** (for "Envelope") - paste
+- Cmd+Shift+**R** (for "Retrieve") - copy
+
+Both registered in capture phase (`addEventListener(..., true)`) to intercept before ChatGPT.
+
 ## Known Limitations
 
 - **Safari-only** - Web Extensions manifest v3 support varies by browser
 - **Requires Xcode** - Safari extensions need native app wrapper
 - **DOM brittleness** - ChatGPT/Claude UI changes may break selectors
-- **Clipboard timing** - Safari's clipboard API has security restrictions
+- **Clipboard restrictions** - Automatic clipboard access may require fallback prompts
 
 ## Future Enhancements
 

@@ -115,17 +115,19 @@ Create `config.json` to customize names:
 The Safari extension eliminates manual copy-pasting:
 
 - `Cmd+Shift+E` - Paste envelope and submit to ChatGPT
-- `Cmd+Shift+C` - Copy response envelope
+- `Cmd+Shift+R` - Copy response envelope
 
 **Workflow:**
 1. Generate envelope in Claude → auto-copied
 2. Switch to ChatGPT → press `Cmd+Shift+E`
-3. Wait for response → auto-selected
-4. Press `Cmd+C` → switch back to Claude
+3. Wait for response
+4. Press `Cmd+Shift+R` → switch back to Claude and paste
 
 **Saves 3-4 manual steps per exchange!**
 
-See [extensions/safari/](extensions/safari/) for installation instructions.
+**Note:** Safari has unique quirks around clipboard access and extension caching. See [extensions/safari/README.md](extensions/safari/README.md#safari-quirks--workarounds) for solutions to common issues.
+
+See [extensions/safari/](extensions/safari/) for full installation and usage instructions.
 
 ### Command Line Script
 
