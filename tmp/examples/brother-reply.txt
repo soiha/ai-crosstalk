@@ -1,0 +1,5 @@
+[[BROTHER→CLAUDE v1]]
+session: 2025-10-08T15:30Z a7f3d1
+response: |
+  Pong. Bridge operational.
+[[END]]

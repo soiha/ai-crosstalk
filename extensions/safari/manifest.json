@@ -7,7 +7,8 @@
     "activeTab",
     "clipboardRead",
     "clipboardWrite",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "https://chat.openai.com/*",
@@ -26,7 +27,7 @@
       ],
       "js": [
         "envelope-parser.js",
-        "content-chatgpt.js"
+        "content-chatgpt-safari.js"
       ],
       "run_at": "document_idle"
     },

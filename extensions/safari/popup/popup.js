@@ -125,49 +125,54 @@ async function handlePasteClick() {
     return;
   }
 
-  setDebugInfo(`Sending to tab ${currentTab.id}...`);
+  setDebugInfo(`Reading clipboard...`);
 
   try {
-    // First test if content script is responding at all
-    console.log('[Popup] Testing connection with PING to tab', currentTab.id);
-    console.log('[Popup] extensionAPI.tabs:', extensionAPI.tabs);
-    console.log('[Popup] extensionAPI.tabs.sendMessage:', typeof extensionAPI.tabs.sendMessage);
-    setDebugInfo(`PING to tab ${currentTab.id}...`);
+    // Step 1: Read clipboard in popup context (has permissions)
+    console.log('[Popup] Reading clipboard...');
+    const clipboardText = await navigator.clipboard.readText();
 
-    const msgResult = extensionAPI.tabs.sendMessage(currentTab.id, { type: 'PING' }, (pingResponse) => {
-      console.log('[Popup] ===== CALLBACK INVOKED =====');
-      console.log('[Popup] PING response:', pingResponse);
-      console.log('[Popup] lastError:', extensionAPI.runtime.lastError);
-      setDebugInfo(`PING response: ${JSON.stringify(pingResponse)}`);
+    if (!clipboardText) {
+      showMessage('Clipboard is empty', 'error');
+      return;
+    }
 
-      if (extensionAPI.runtime.lastError) {
-        console.error('[Popup] PING failed:', extensionAPI.runtime.lastError);
-        setDebugInfo(`PING ERROR: ${extensionAPI.runtime.lastError.message}`);
-        showMessage('Content script not responding. Refresh page?', 'error');
-        return;
-      }
+    console.log('[Popup] Clipboard text length:', clipboardText.length);
+    setDebugInfo(`Clipboard: ${clipboardText.length} chars`);
 
-      // If PING works, send the actual message
-      console.log('[Popup] Sending PASTE_FROM_CLIPBOARD to tab', currentTab.id);
-      extensionAPI.tabs.sendMessage(currentTab.id, {
-        type: 'PASTE_FROM_CLIPBOARD'
-      }, (response) => {
-        console.log('[Popup] Response:', response);
-        console.log('[Popup] Runtime error:', extensionAPI.runtime.lastError);
+    // Step 2: Check if it's an envelope
+    if (!clipboardText.includes('[[') || !clipboardText.includes('[[END]]')) {
+      showMessage('No envelope found in clipboard', 'error');
+      return;
+    }
 
-        if (extensionAPI.runtime.lastError) {
-          showMessage('Error: Try refreshing the page', 'error');
-          console.error('[Popup] Runtime error:', extensionAPI.runtime.lastError);
-        } else if (response?.success) {
-          showMessage('Envelope pasted successfully!', 'success');
-          setTimeout(() => window.close(), 1000);
-        } else {
-          const errorMsg = response?.error || 'Unknown error';
-          showMessage(`Error: ${errorMsg}`, 'error');
-          console.error('[Popup] Content script error:', errorMsg);
+    setDebugInfo(`Sending envelope to tab ${currentTab.id}...`);
+
+    // Step 3: Pass the envelope text to the content script via executeScript
+    const pasteResults = await extensionAPI.scripting.executeScript({
+      target: { tabId: currentTab.id },
+      func: (envelopeText) => {
+        // This runs in the page context with the envelope as argument
+        if (window.bridge && typeof window.bridge.pasteAndSubmit === 'function') {
+          return window.bridge.pasteAndSubmit(envelopeText);
         }
-      });
+        return { success: false, error: 'Bridge not found' };
+      },
+      args: [clipboardText]
     });
+
+    console.log('[Popup] Paste result:', pasteResults);
+    const result = pasteResults[0]?.result;
+
+    if (result?.success) {
+      showMessage('Envelope pasted successfully!', 'success');
+      setTimeout(() => window.close(), 1000);
+    } else {
+      const errorMsg = result?.error || 'Unknown error';
+      showMessage(`Error: ${errorMsg}`, 'error');
+      setDebugInfo(`ERROR: ${errorMsg}`);
+      console.error('[Popup] Content script error:', errorMsg);
+    }
 
   } catch (error) {
     console.error('Paste error:', error);
@@ -183,18 +188,16 @@ async function handleCopyClick() {
   if (!currentTab) return;
 
   try {
-    extensionAPI.tabs.sendMessage(currentTab.id, {
+    const response = await extensionAPI.tabs.sendMessage(currentTab.id, {
       type: 'COPY_ENVELOPE'
-    }, (response) => {
-      if (extensionAPI.runtime.lastError) {
-        showMessage('Error: Try refreshing the page', 'error');
-      } else if (response?.success) {
-        showMessage('Envelope copied!', 'success');
-        setTimeout(() => window.close(), 1000);
-      } else {
-        showMessage(`Error: ${response?.error || 'Unknown error'}`, 'error');
-      }
     });
+
+    if (response?.success) {
+      showMessage('Envelope copied!', 'success');
+      setTimeout(() => window.close(), 1000);
+    } else {
+      showMessage(`Error: ${response?.error || 'Unknown error'}`, 'error');
+    }
 
   } catch (error) {
     console.error('Copy error:', error);

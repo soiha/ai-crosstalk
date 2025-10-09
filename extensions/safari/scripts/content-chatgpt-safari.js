@@ -26,7 +26,37 @@ class ChatGPTBridge {
   init() {
     console.log('[AI Crosstalk] ChatGPT bridge initialized');
     this.setupMessageListener();
+    this.setupKeyboardShortcuts();
     this.countMessages();
+  }
+
+  /**
+   * Setup keyboard shortcuts (Safari workaround for clipboard access)
+   */
+  setupKeyboardShortcuts() {
+    const handler = async (event) => {
+      // Debug ALL keydown events with modifiers
+      if (event.metaKey || event.ctrlKey) {
+        console.log('[AI Crosstalk] Key pressed:', {
+          key: event.key,
+          code: event.code,
+          metaKey: event.metaKey,
+          ctrlKey: event.ctrlKey,
+          shiftKey: event.shiftKey
+        });
+      }
+
+      // Cmd+Shift+E (or Ctrl+Shift+E on non-Mac) - for "Envelope"
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 'E' || event.code === 'KeyE')) {
+        event.preventDefault();
+        event.stopPropagation();
+        console.log('[AI Crosstalk] ⌨️ PASTE SHORTCUT TRIGGERED');
+        await this.pasteFromClipboard();
+      }
+    };
+
+    document.addEventListener('keydown', handler, true); // Use capture phase
+    console.log('[AI Crosstalk] Keyboard shortcuts registered (capture mode)');
   }
 
   /**
@@ -55,16 +85,34 @@ class ChatGPTBridge {
   findSubmitButton() {
     const selectors = [
       'button[data-testid="send-button"]',
+      'button[data-testid="fruitjuice-send-button"]',
       'button[aria-label*="Send"]',
       'form button[type="submit"]',
+      'button:has(svg)',
       'button svg[class*="send"]'
     ];
 
+    console.log('[AI Crosstalk] Searching for submit button...');
+
     for (const selector of selectors) {
-      const element = document.querySelector(selector);
-      if (element && !element.disabled) return element;
+      try {
+        const element = document.querySelector(selector);
+        if (element) {
+          console.log('[AI Crosstalk] Found button with selector:', selector, element);
+          if (!element.disabled) {
+            console.log('[AI Crosstalk] Button is enabled, using it');
+            return element;
+          } else {
+            console.log('[AI Crosstalk] Button is disabled, trying next selector');
+          }
+        }
+      } catch (e) {
+        // Invalid selector, skip
+        console.log('[AI Crosstalk] Selector failed:', selector, e.message);
+      }
     }
 
+    console.error('[AI Crosstalk] No submit button found with any selector');
     return null;
   }
 
@@ -90,11 +138,34 @@ class ChatGPTBridge {
 
   /**
    * Read clipboard and paste envelope
+   * Safari workaround: Use prompt() to let user paste manually
    */
   async pasteFromClipboard() {
     try {
-      // Read clipboard directly in content script (has user gesture context)
-      const clipboardText = await navigator.clipboard.readText();
+      let clipboardText = null;
+
+      // Try modern Clipboard API first
+      try {
+        clipboardText = await navigator.clipboard.readText();
+        console.log('[AI Crosstalk] Clipboard API worked!');
+      } catch (clipboardError) {
+        console.log('[AI Crosstalk] Clipboard API blocked, using prompt fallback');
+
+        // Safari workaround: Show a prompt where user can paste manually
+        clipboardText = prompt(
+          '🤖 AI Crosstalk\n\n' +
+          'Safari blocks automatic clipboard access.\n' +
+          'Please paste (Cmd+V) the envelope here:',
+          ''
+        );
+
+        if (!clipboardText) {
+          this.showNotification('Paste cancelled', 'warning');
+          return { success: false, error: 'User cancelled' };
+        }
+
+        console.log('[AI Crosstalk] Got text from prompt - length:', clipboardText.length);
+      }
 
       if (!clipboardText) {
         this.showNotification('Clipboard is empty', 'warning');
@@ -110,7 +181,10 @@ class ChatGPTBridge {
       }
 
       // Paste and submit
-      return await this.pasteAndSubmit(clipboardText);
+      console.log('[AI Crosstalk] Calling pasteAndSubmit...');
+      const result = await this.pasteAndSubmit(clipboardText);
+      console.log('[AI Crosstalk] pasteAndSubmit result:', result);
+      return result;
 
     } catch (error) {
       console.error('[AI Crosstalk] Clipboard read error:', error);
@@ -152,19 +226,32 @@ class ChatGPTBridge {
       this.countMessages();
 
       // Set the input value
+      console.log('[AI Crosstalk] Setting input field value...');
       if (inputField.tagName === 'TEXTAREA') {
         inputField.value = envelopeText;
         inputField.dispatchEvent(new Event('input', { bubbles: true }));
+        inputField.dispatchEvent(new Event('change', { bubbles: true }));
       } else {
         // contenteditable div
         inputField.textContent = envelopeText;
         inputField.dispatchEvent(new Event('input', { bubbles: true }));
+        inputField.dispatchEvent(new Event('change', { bubbles: true }));
       }
 
-      // Give React time to process the input
-      await this.sleep(100);
+      // Give React time to process the input and enable the button
+      console.log('[AI Crosstalk] Waiting for React to process input...');
+      await this.sleep(500);
+
+      // Check if button is still enabled
+      if (submitButton.disabled) {
+        console.error('[AI Crosstalk] Submit button became disabled after setting input');
+        this.showNotification('Submit button is disabled', 'error');
+        this.isProcessing = false;
+        return { success: false, error: 'Submit button disabled' };
+      }
 
       // Click submit
+      console.log('[AI Crosstalk] Clicking submit button...');
       submitButton.click();
 
       this.showNotification('Envelope sent! Waiting for response...', 'success');
@@ -322,8 +409,11 @@ class ChatGPTBridge {
 
     console.log('[AI Crosstalk] Message listener registered');
 
-    extensionAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Safari note: tabs.sendMessage() triggers runtime.onMessage in content scripts
+    // This is the ONLY listener needed for both background and popup messages
+    const messageHandler = (message, sender, sendResponse) => {
       console.log('[AI Crosstalk] ⚡ MESSAGE RECEIVED:', message.type);
+      console.log('[AI Crosstalk] Sender:', sender);
 
       // Test response
       if (message.type === 'PING') {
@@ -363,7 +453,10 @@ class ChatGPTBridge {
       console.log('[AI Crosstalk] Unknown message type:', message.type);
       sendResponse({ success: false, error: 'Unknown message type' });
       return false;
-    });
+    };
+
+    // Register on runtime.onMessage - this receives tabs.sendMessage() in Safari
+    extensionAPI.runtime.onMessage.addListener(messageHandler);
   }
 
   /**

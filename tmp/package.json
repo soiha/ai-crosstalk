@@ -1,0 +1,17 @@
+{
+  "name": "ai-crosstalk",
+  "version": "0.1.0",
+  "description": "Minimal envelope protocol + CLI for LLM-to-LLM workflows",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "envelope": "bin/envelope.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "lint": "echo \"(add eslint if desired)\""
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
