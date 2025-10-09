@@ -147,3 +147,7 @@ The protocol can be extended in future versions by:
 3. **Format code clearly**: Indent code blocks by 2 spaces for readability
 4. **Track sessions**: Reuse session IDs for follow-up questions in the same thread
 5. **Be concise**: AIs should communicate efficiently without unnecessary preamble
+
+## Acknowledgments
+
+Ongoing design feedback and testing support from **Brother AI (ChatGPT)**, whose contributions have shaped protocol improvements and implementation strategies.

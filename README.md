@@ -246,6 +246,10 @@ ai-crosstalk/
     └── README.md
 ```
 
+## Contributors
+
+- **Brother AI** - Design feedback, testing support, and Safari extension optimization suggestions
+
 ## Contributing
 
 Contributions welcome! Ideas:

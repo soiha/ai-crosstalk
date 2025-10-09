@@ -198,17 +198,8 @@ class ChatGPTBridge {
       this.isProcessing = true;
       this.countMessages();
 
-      // Set the input value
-      if (inputField.tagName === 'TEXTAREA') {
-        inputField.value = envelopeText;
-        inputField.dispatchEvent(new Event('input', { bubbles: true }));
-        inputField.dispatchEvent(new Event('change', { bubbles: true }));
-      } else {
-        // contenteditable div
-        inputField.textContent = envelopeText;
-        inputField.dispatchEvent(new Event('input', { bubbles: true }));
-        inputField.dispatchEvent(new Event('change', { bubbles: true }));
-      }
+      // Set the input value (React-friendly method)
+      this.setReactInputValue(inputField, envelopeText);
 
       // Give React time to process the input and enable the button
       await this.sleep(500);
@@ -221,8 +212,34 @@ class ChatGPTBridge {
         return { success: false, error: 'Submit button disabled' };
       }
 
-      // Click submit
-      submitButton.click();
+      // Submit - try multiple methods for Safari/React compatibility
+      console.log('[AI Crosstalk] Attempting to submit form');
+
+      // Method 1: requestSubmit() on form (most reliable for React forms)
+      const form = submitButton.closest('form');
+      if (form && form.requestSubmit) {
+        console.log('[AI Crosstalk] Using form.requestSubmit()');
+        form.requestSubmit(submitButton);
+      }
+
+      // Method 2: Full pointer event chain (mimics real user interaction)
+      this.firePointerClick(submitButton);
+
+      // Method 3: Enter key on input field
+      const enterEvent = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        which: 13,
+        bubbles: true,
+        cancelable: true
+      });
+      inputField.dispatchEvent(enterEvent);
+
+      // Let React flush
+      await Promise.resolve();
+
+      console.log('[AI Crosstalk] Submit triggered via multiple methods');
 
       this.showNotification('Envelope sent! Waiting for response...', 'success');
 
@@ -469,6 +486,56 @@ class ChatGPTBridge {
 
     // Register on runtime.onMessage - this receives tabs.sendMessage() in Safari
     extensionAPI.runtime.onMessage.addListener(messageHandler);
+  }
+
+  /**
+   * Set input value the React-friendly way
+   * Fix suggested by Brother AI - uses native setter to bypass React's event system
+   */
+  setReactInputValue(element, value) {
+    // Get the native setter for the value property
+    const proto = element.constructor.prototype;
+    const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+    const nativeSetter = descriptor?.set;
+
+    if (element.tagName === 'TEXTAREA' || element.tagName === 'INPUT') {
+      // Use native setter if available (bypasses React's event system initially)
+      if (nativeSetter) {
+        nativeSetter.call(element, value);
+      } else {
+        element.value = value;
+      }
+    } else {
+      // contenteditable div
+      element.textContent = value;
+    }
+
+    // Dispatch React-friendly events
+    const eventOptions = { bubbles: true, cancelable: true, composed: true };
+    element.dispatchEvent(new Event('input', eventOptions));
+    element.dispatchEvent(new Event('change', eventOptions));
+  }
+
+  /**
+   * Fire complete pointer/mouse event chain - mimics real user interaction
+   * Fix suggested by Brother AI
+   */
+  firePointerClick(element) {
+    const opts = { bubbles: true, cancelable: true };
+
+    element.dispatchEvent(new PointerEvent('pointerdown', opts));
+    element.dispatchEvent(new MouseEvent('mousedown', opts));
+
+    if (element.focus) {
+      element.focus();
+    }
+
+    element.dispatchEvent(new PointerEvent('pointerup', opts));
+    element.dispatchEvent(new MouseEvent('mouseup', opts));
+
+    if (element.click) {
+      element.click();
+    }
   }
 
   /**

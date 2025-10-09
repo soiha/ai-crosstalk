@@ -72,11 +72,27 @@ The extension implements **Option B** (semi-automatic with hotkeys):
    # For now, manual Xcode setup is required
    ```
 
-4. **Enable in Safari**
+4. **Enable Developer Features in Safari** ⚠️
 
-   a. Open Safari → Preferences → Extensions
+   **CRITICAL:** This step is required or the extension won't appear!
+
+   a. Open Safari → Settings → Advanced
+   b. Check **"Show features for web development"**
+   c. Go to Safari → Settings → Developer (new tab should appear)
+   d. Check **"Allow unsigned extensions"** ✓
+
+   **Note:** This setting can mysteriously turn itself off after Safari updates or system restarts. If your extension disappears, check this first!
+
+5. **Enable the Extension**
+
+   a. Open Safari → Settings → Extensions
    b. Enable "AI Crosstalk Bridge"
    c. Grant clipboard permissions when prompted
+
+   **If the extension doesn't appear:**
+   - Verify "Allow unsigned extensions" is still checked (step 4)
+   - Run the wrapper app from `DerivedData/` to re-register
+   - Quit Safari completely (Cmd+Q) and reopen
 
 ## Usage
 
@@ -134,11 +150,31 @@ All permissions are used exclusively for envelope exchange. No data is collected
 
 ## Troubleshooting
 
+### ⚠️ Extension disappeared from Settings → Extensions
+
+**This is the #1 issue!** Safari's "Allow unsigned extensions" toggle mysteriously turns off after:
+- Safari updates
+- System restarts
+- Disabling the extension
+- Clean builds
+
+**Fix:**
+1. Safari → Settings → Developer → Check **"Allow unsigned extensions"** ✓
+2. Run the wrapper app: `open path/to/DerivedData/.../aicrosstalk.app`
+3. Quit Safari completely (Cmd+Q) and reopen
+4. The extension should reappear in Settings → Extensions
+
+If still missing, manually register:
+```bash
+pluginkit -a "/path/to/aicrosstalk.app/Contents/PlugIns/aicrosstalk Extension.appex"
+```
+
 ### Extension doesn't respond to keyboard shortcuts
 
 1. Refresh the AI platform tab
-2. Check Safari → Preferences → Extensions → AI Crosstalk Bridge is enabled
+2. Check Safari → Settings → Extensions → AI Crosstalk Bridge is enabled
 3. Ensure clipboard permissions are granted
+4. Verify "Allow unsigned extensions" is still checked (see above)
 
 ### "Could not find input field" error
 
@@ -205,15 +241,24 @@ Building Safari extensions involves several platform-specific challenges. Here's
 - For pasting: Shows a dialog where user can paste with Cmd+V
 - For copying: Shows a dialog with the text pre-selected for Cmd+C
 
-### 2. Extension Registration Issues
+### 2. Extension Registration Issues ⚠️ COMMON GOTCHA
 
 **Problem:** After disabling the extension or cleaning build, it disappears from Safari Settings.
 
+**Root Cause:** Safari's "Allow unsigned extensions" toggle turns itself off mysteriously. This is by far the most common issue.
+
 **Solution:**
-- Run the wrapper app at least once: `open aicrosstalk.app`
-- Keep the app running when first enabling the extension
-- Enable "Allow unsigned extensions" in Safari → Settings → Advanced → "Show features for web developers"
-- Manual registration: `pluginkit -a path/to/aicrosstalk.app/Contents/PlugIns/aicrosstalk\ Extension.appex`
+1. **FIRST:** Safari → Settings → Developer → Check **"Allow unsigned extensions"** ✓
+2. Run the wrapper app at least once: `open aicrosstalk.app`
+3. Quit Safari completely (Cmd+Q) and reopen
+4. Extension should now appear in Settings → Extensions
+
+**Pro tip:** After every Safari update or system restart, check that "Allow unsigned extensions" is still enabled!
+
+Manual registration (if needed):
+```bash
+pluginkit -a "/path/to/aicrosstalk.app/Contents/PlugIns/aicrosstalk Extension.appex"
+```
 
 ### 3. Aggressive JavaScript Caching
 
