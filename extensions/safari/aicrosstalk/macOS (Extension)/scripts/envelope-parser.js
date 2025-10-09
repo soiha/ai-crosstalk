@@ -9,13 +9,13 @@ const EnvelopeParser = {
    */
   patterns: {
     header: /\[\[(.+?)→(.+?)\s+v(\d+)\]\]/,
-    session: /session:\s*(.+)/,
-    context: /context:\s*(.+)/,
+    session: /session:\s*([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:context|intent|body|response|sig|\[\[END\]\]))/,
+    context: /context:\s*([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:intent|body|response|sig|\[\[END\]\]))/,
     intent: /intent:\s*(QUESTION|STATUS|PATCH|NOTE)/,
-    body: /body:\s*\|\n([\s\S]*?)(?=\nsig:)/,
-    response: /response:\s*\|\n([\s\S]*?)(?=\n\[\[END\]\])/,
+    body: /body:\s*\|\s*([^]+?)(?=\s+sig:)/,
+    response: /response:\s*\|\s*([^]+?)(?=\s+\[\[END\]\])/,
     footer: /\[\[END\]\]/,
-    fullEnvelope: /\[\[.+?→.+?\s+v\d+\]\][\s\S]*?\[\[END\]\]/g
+    fullEnvelope: /\[\[.+?→.+?\s+v\d+\]\][^]*?\[\[END\]\]/g
   },
 
   /**
@@ -57,18 +57,26 @@ const EnvelopeParser = {
     // Check if it's a request (has body) or response (has response)
     const bodyMatch = envelopeText.match(this.patterns.body);
     const responseMatch = envelopeText.match(this.patterns.response);
+    const contextMatch = envelopeText.match(this.patterns.context);
+    const intentMatch = envelopeText.match(this.patterns.intent);
 
-    if (bodyMatch) {
-      const contextMatch = envelopeText.match(this.patterns.context);
-      const intentMatch = envelopeText.match(this.patterns.intent);
-
-      result.type = 'request';
-      result.context = contextMatch ? contextMatch[1].trim() : null;
-      result.intent = intentMatch ? intentMatch[1].trim() : null;
-      result.body = bodyMatch[1].replace(/^  /gm, '').trim();
-    } else if (responseMatch) {
+    // Determine if it's a request or response based on direction and content
+    // Responses FROM other AIs use body: format but are still responses
+    if (responseMatch) {
       result.type = 'response';
       result.response = responseMatch[1].replace(/^  /gm, '').trim();
+    } else if (bodyMatch) {
+      // If it has intent field, it's definitely a request
+      if (intentMatch) {
+        result.type = 'request';
+        result.context = contextMatch ? contextMatch[1].trim() : null;
+        result.intent = intentMatch[1].trim();
+        result.body = bodyMatch[1].replace(/^  /gm, '').trim();
+      } else {
+        // No intent = it's a response using body: format (Brother's format)
+        result.type = 'response';
+        result.response = bodyMatch[1].replace(/^  /gm, '').trim();
+      }
     } else {
       result.valid = false;
       result.error = 'Envelope has neither body nor response';
@@ -134,6 +142,4 @@ response: |
 };
 
 // Make available globally for content scripts
-console.log('[AI Crosstalk] Exposing EnvelopeParser to global scope');
 window.EnvelopeParser = EnvelopeParser;
-console.log('[AI Crosstalk] EnvelopeParser exposed:', typeof window.EnvelopeParser);

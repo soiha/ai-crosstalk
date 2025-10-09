@@ -493,7 +493,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.soiha.aicrosstalk.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aicrosstalk.Extension;
 				PRODUCT_NAME = "aicrosstalk Extension";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -524,7 +524,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.soiha.aicrosstalk.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aicrosstalk.Extension;
 				PRODUCT_NAME = "aicrosstalk Extension";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -563,7 +563,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.soiha.aicrosstalk;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aicrosstalk;
 				PRODUCT_NAME = aicrosstalk;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -600,7 +600,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.soiha.aicrosstalk;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aicrosstalk;
 				PRODUCT_NAME = aicrosstalk;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -632,7 +632,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.soiha.aicrosstalk.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aicrosstalk.Extension;
 				PRODUCT_NAME = "aicrosstalk Extension";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
@@ -663,7 +663,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.soiha.aicrosstalk.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aicrosstalk.Extension;
 				PRODUCT_NAME = "aicrosstalk Extension";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
@@ -697,7 +697,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.soiha.aicrosstalk;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aicrosstalk;
 				PRODUCT_NAME = aicrosstalk;
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
@@ -731,7 +731,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.soiha.aicrosstalk;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.aicrosstalk;
 				PRODUCT_NAME = aicrosstalk;
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;

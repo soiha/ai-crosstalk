@@ -7,10 +7,6 @@
 const extensionAPI = (typeof browser !== 'undefined') ? browser :
                      (typeof chrome !== 'undefined') ? chrome : null;
 
-console.log('[Content] browser available:', typeof browser);
-console.log('[Content] chrome available:', typeof chrome);
-console.log('[Content] Using API:', extensionAPI === browser ? 'browser' : extensionAPI === chrome ? 'chrome' : 'none');
-
 if (!extensionAPI) {
   console.error('[AI Crosstalk] Extension API not available');
 }
@@ -35,28 +31,23 @@ class ChatGPTBridge {
    */
   setupKeyboardShortcuts() {
     const handler = async (event) => {
-      // Debug ALL keydown events with modifiers
-      if (event.metaKey || event.ctrlKey) {
-        console.log('[AI Crosstalk] Key pressed:', {
-          key: event.key,
-          code: event.code,
-          metaKey: event.metaKey,
-          ctrlKey: event.ctrlKey,
-          shiftKey: event.shiftKey
-        });
-      }
-
-      // Cmd+Shift+E (or Ctrl+Shift+E on non-Mac) - for "Envelope"
+      // Cmd+Shift+E (or Ctrl+Shift+E on non-Mac) - for "Envelope" paste
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 'E' || event.code === 'KeyE')) {
         event.preventDefault();
         event.stopPropagation();
-        console.log('[AI Crosstalk] ⌨️ PASTE SHORTCUT TRIGGERED');
         await this.pasteFromClipboard();
+      }
+
+      // Cmd+Shift+R (or Ctrl+Shift+R on non-Mac) - for "Retrieve" response
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 'R' || event.code === 'KeyR')) {
+        event.preventDefault();
+        event.stopPropagation();
+        await this.copyLastEnvelope();
       }
     };
 
     document.addEventListener('keydown', handler, true); // Use capture phase
-    console.log('[AI Crosstalk] Keyboard shortcuts registered (capture mode)');
+    console.log('[AI Crosstalk] Keyboard shortcuts registered');
   }
 
   /**
@@ -92,27 +83,18 @@ class ChatGPTBridge {
       'button svg[class*="send"]'
     ];
 
-    console.log('[AI Crosstalk] Searching for submit button...');
-
     for (const selector of selectors) {
       try {
         const element = document.querySelector(selector);
-        if (element) {
-          console.log('[AI Crosstalk] Found button with selector:', selector, element);
-          if (!element.disabled) {
-            console.log('[AI Crosstalk] Button is enabled, using it');
-            return element;
-          } else {
-            console.log('[AI Crosstalk] Button is disabled, trying next selector');
-          }
+        if (element && !element.disabled) {
+          return element;
         }
       } catch (e) {
         // Invalid selector, skip
-        console.log('[AI Crosstalk] Selector failed:', selector, e.message);
       }
     }
 
-    console.error('[AI Crosstalk] No submit button found with any selector');
+    console.error('[AI Crosstalk] No submit button found');
     return null;
   }
 
@@ -147,11 +129,9 @@ class ChatGPTBridge {
       // Try modern Clipboard API first
       try {
         clipboardText = await navigator.clipboard.readText();
-        console.log('[AI Crosstalk] Clipboard API worked!');
       } catch (clipboardError) {
-        console.log('[AI Crosstalk] Clipboard API blocked, using prompt fallback');
-
         // Safari workaround: Show a prompt where user can paste manually
+        console.log('[AI Crosstalk] Clipboard API blocked, using prompt fallback');
         clipboardText = prompt(
           '🤖 AI Crosstalk\n\n' +
           'Safari blocks automatic clipboard access.\n' +
@@ -163,16 +143,12 @@ class ChatGPTBridge {
           this.showNotification('Paste cancelled', 'warning');
           return { success: false, error: 'User cancelled' };
         }
-
-        console.log('[AI Crosstalk] Got text from prompt - length:', clipboardText.length);
       }
 
       if (!clipboardText) {
         this.showNotification('Clipboard is empty', 'warning');
         return { success: false, error: 'Clipboard empty' };
       }
-
-      console.log('[AI Crosstalk] Clipboard text length:', clipboardText.length);
 
       // Check if it's an envelope
       if (!clipboardText.includes('[[') || !clipboardText.includes('[[END]]')) {
@@ -181,10 +157,7 @@ class ChatGPTBridge {
       }
 
       // Paste and submit
-      console.log('[AI Crosstalk] Calling pasteAndSubmit...');
-      const result = await this.pasteAndSubmit(clipboardText);
-      console.log('[AI Crosstalk] pasteAndSubmit result:', result);
-      return result;
+      return await this.pasteAndSubmit(clipboardText);
 
     } catch (error) {
       console.error('[AI Crosstalk] Clipboard read error:', error);
@@ -226,7 +199,6 @@ class ChatGPTBridge {
       this.countMessages();
 
       // Set the input value
-      console.log('[AI Crosstalk] Setting input field value...');
       if (inputField.tagName === 'TEXTAREA') {
         inputField.value = envelopeText;
         inputField.dispatchEvent(new Event('input', { bubbles: true }));
@@ -239,19 +211,17 @@ class ChatGPTBridge {
       }
 
       // Give React time to process the input and enable the button
-      console.log('[AI Crosstalk] Waiting for React to process input...');
       await this.sleep(500);
 
       // Check if button is still enabled
       if (submitButton.disabled) {
-        console.error('[AI Crosstalk] Submit button became disabled after setting input');
+        console.error('[AI Crosstalk] Submit button disabled after setting input');
         this.showNotification('Submit button is disabled', 'error');
         this.isProcessing = false;
         return { success: false, error: 'Submit button disabled' };
       }
 
       // Click submit
-      console.log('[AI Crosstalk] Clicking submit button...');
       submitButton.click();
 
       this.showNotification('Envelope sent! Waiting for response...', 'success');
@@ -263,6 +233,58 @@ class ChatGPTBridge {
     } catch (error) {
       this.isProcessing = false;
       this.showNotification('Error pasting envelope', 'error');
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Copy the last envelope from the conversation
+   */
+  async copyLastEnvelope() {
+    try {
+      const lastMessage = this.getLastAssistantMessage();
+
+      if (!lastMessage) {
+        this.showNotification('No assistant message found', 'warning');
+        return { success: false, error: 'No message' };
+      }
+
+      if (!EnvelopeParser.hasEnvelope(lastMessage)) {
+        this.showNotification('Last message has no envelope', 'warning');
+        return { success: false, error: 'No envelope in message' };
+      }
+
+      const envelope = EnvelopeParser.findLastEnvelope(lastMessage);
+
+      if (!envelope || !envelope.valid) {
+        this.showNotification('Invalid envelope found', 'error');
+        console.error('[AI Crosstalk] Invalid envelope:', envelope);
+        return { success: false, error: 'Invalid envelope' };
+      }
+
+      // Try to copy to clipboard
+      try {
+        await navigator.clipboard.writeText(envelope.raw);
+        this.showNotification('Envelope copied to clipboard!', 'success');
+        return { success: true };
+      } catch (clipboardError) {
+        console.log('[AI Crosstalk] Clipboard write blocked, showing in prompt');
+
+        // Safari fallback: Show in a dialog where user can copy manually
+        prompt(
+          '🤖 AI Crosstalk - Copy Response\n\n' +
+          'Safari blocks automatic clipboard write.\n' +
+          'Copy this envelope (Cmd+C):',
+          envelope.raw
+        );
+
+        this.showNotification('Please copy from the dialog', 'info');
+        return { success: true };
+      }
+
+    } catch (error) {
+      console.error('[AI Crosstalk] Copy error:', error);
+      this.showNotification('Error copying envelope', 'error');
       return { success: false, error: error.message };
     }
   }
@@ -412,23 +434,15 @@ class ChatGPTBridge {
     // Safari note: tabs.sendMessage() triggers runtime.onMessage in content scripts
     // This is the ONLY listener needed for both background and popup messages
     const messageHandler = (message, sender, sendResponse) => {
-      console.log('[AI Crosstalk] ⚡ MESSAGE RECEIVED:', message.type);
-      console.log('[AI Crosstalk] Sender:', sender);
-
       // Test response
       if (message.type === 'PING') {
-        console.log('[AI Crosstalk] PING received, sending PONG');
         sendResponse({ pong: true });
         return false;
       }
 
-      // NEW: Handle clipboard reading directly in content script
+      // Handle clipboard reading directly in content script
       if (message.type === 'PASTE_FROM_CLIPBOARD') {
-        console.log('[AI Crosstalk] Calling pasteFromClipboard()');
-        this.pasteFromClipboard().then((result) => {
-          console.log('[AI Crosstalk] pasteFromClipboard result:', result);
-          sendResponse(result);
-        }).catch((error) => {
+        this.pasteFromClipboard().then(sendResponse).catch((error) => {
           console.error('[AI Crosstalk] pasteFromClipboard error:', error);
           sendResponse({ success: false, error: error.message });
         });
@@ -437,7 +451,6 @@ class ChatGPTBridge {
 
       // Legacy: Direct envelope paste
       if (message.type === 'PASTE_ENVELOPE') {
-        console.log('[AI Crosstalk] Calling pasteAndSubmit()');
         this.pasteAndSubmit(message.envelope).then(sendResponse);
         return true; // Keep channel open for async response
       }
@@ -450,7 +463,6 @@ class ChatGPTBridge {
         return false;
       }
 
-      console.log('[AI Crosstalk] Unknown message type:', message.type);
       sendResponse({ success: false, error: 'Unknown message type' });
       return false;
     };
@@ -470,4 +482,3 @@ class ChatGPTBridge {
 // Initialize the bridge
 const bridge = new ChatGPTBridge();
 window.bridge = bridge; // Expose globally for debugging
-console.log('[AI Crosstalk] Bridge exposed to window:', typeof window.bridge);

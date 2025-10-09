@@ -46,12 +46,20 @@ class ChatGPTBridge {
         });
       }
 
-      // Cmd+Shift+E (or Ctrl+Shift+E on non-Mac) - for "Envelope"
+      // Cmd+Shift+E (or Ctrl+Shift+E on non-Mac) - for "Envelope" paste
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 'E' || event.code === 'KeyE')) {
         event.preventDefault();
         event.stopPropagation();
         console.log('[AI Crosstalk] ⌨️ PASTE SHORTCUT TRIGGERED');
         await this.pasteFromClipboard();
+      }
+
+      // Cmd+Shift+R (or Ctrl+Shift+R on non-Mac) - for "Retrieve" response
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 'R' || event.code === 'KeyR')) {
+        event.preventDefault();
+        event.stopPropagation();
+        console.log('[AI Crosstalk] ⌨️ COPY SHORTCUT TRIGGERED');
+        await this.copyLastEnvelope();
       }
     };
 
@@ -263,6 +271,66 @@ class ChatGPTBridge {
     } catch (error) {
       this.isProcessing = false;
       this.showNotification('Error pasting envelope', 'error');
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Copy the last envelope from the conversation
+   */
+  async copyLastEnvelope() {
+    try {
+      console.log('[AI Crosstalk] Looking for last envelope...');
+      const lastMessage = this.getLastAssistantMessage();
+
+      if (!lastMessage) {
+        this.showNotification('No assistant message found', 'warning');
+        return { success: false, error: 'No message' };
+      }
+
+      console.log('[AI Crosstalk] Last message text:', lastMessage.substring(0, 200));
+
+      if (!EnvelopeParser.hasEnvelope(lastMessage)) {
+        this.showNotification('Last message has no envelope', 'warning');
+        return { success: false, error: 'No envelope in message' };
+      }
+
+      const envelope = EnvelopeParser.findLastEnvelope(lastMessage);
+
+      console.log('[AI Crosstalk] Parsed envelope:', envelope);
+
+      if (!envelope || !envelope.valid) {
+        this.showNotification('Invalid envelope found', 'error');
+        console.error('[AI Crosstalk] Invalid envelope:', envelope);
+        return { success: false, error: 'Invalid envelope' };
+      }
+
+      console.log('[AI Crosstalk] Found envelope:', envelope.raw.substring(0, 100) + '...');
+
+      // Try to copy to clipboard
+      try {
+        await navigator.clipboard.writeText(envelope.raw);
+        this.showNotification('Envelope copied to clipboard!', 'success');
+        console.log('[AI Crosstalk] Copied to clipboard successfully');
+        return { success: true };
+      } catch (clipboardError) {
+        console.log('[AI Crosstalk] Clipboard write blocked, showing in prompt');
+
+        // Safari fallback: Show in a dialog where user can copy manually
+        prompt(
+          '🤖 AI Crosstalk - Copy Response\n\n' +
+          'Safari blocks automatic clipboard write.\n' +
+          'Copy this envelope (Cmd+C):',
+          envelope.raw
+        );
+
+        this.showNotification('Please copy from the dialog', 'info');
+        return { success: true };
+      }
+
+    } catch (error) {
+      console.error('[AI Crosstalk] Copy error:', error);
+      this.showNotification('Error copying envelope', 'error');
       return { success: false, error: error.message };
     }
   }
