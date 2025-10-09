@@ -59,19 +59,37 @@ sig: none
 
 function parseEnvelope(envelopeText) {
   const headerMatch = envelopeText.match(/\[\[(.+?)→(.+?)\s+v(\d+)\]\]/);
-  const sessionMatch = envelopeText.match(/session:\s*(.+)/);
-  const responseMatch = envelopeText.match(/response:\s*\|\n([\s\S]*?)(?=\n\[\[END\]\])/);
+  const sessionMatch = envelopeText.match(/session:\s*([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:context|intent|body|response|sig|\[\[END\]\]))/);
+  const intentMatch = envelopeText.match(/intent:\s*(QUESTION|STATUS|PATCH|NOTE|ANSWER)/);
 
-  if (!sessionMatch || !responseMatch) {
-    throw new Error('Invalid envelope format');
+  // Try both response: and body: formats (handles different AI response styles)
+  const responseMatch = envelopeText.match(/response:\s*\|\s*([^]+?)(?=\s+\[\[END\]\])/);
+  const bodyMatch = envelopeText.match(/body:\s*\|\s*([^]+?)(?=\s+sig:)/);
+
+  if (!headerMatch || !sessionMatch) {
+    throw new Error('Invalid envelope format: missing header or session');
+  }
+
+  // Determine response content
+  // - response: field (Claude's response style)
+  // - body: field without intent (Brother's response style without intent field)
+  // - body: field with intent (request or Brother's ANSWER style)
+  let responseContent;
+  if (responseMatch) {
+    responseContent = responseMatch[1].trim();
+  } else if (bodyMatch) {
+    // Body field present - could be request or response
+    responseContent = bodyMatch[1].trim();
+  } else {
+    throw new Error('Invalid envelope format: missing response or body content');
   }
 
   return {
-    from: headerMatch ? headerMatch[1] : 'unknown',
-    to: headerMatch ? headerMatch[2] : 'unknown',
-    version: headerMatch ? headerMatch[3] : 'unknown',
+    from: headerMatch[1],
+    to: headerMatch[2],
+    version: headerMatch[3],
     session: sessionMatch[1].trim(),
-    response: responseMatch[1].replace(/^  /gm, '').trim()
+    response: responseContent.replace(/^  /gm, '').trim()
   };
 }
 
